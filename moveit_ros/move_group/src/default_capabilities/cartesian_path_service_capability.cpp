@@ -138,14 +138,16 @@ bool move_group::MoveGroupCartesianPathService::computeService(moveit_msgs::GetC
                 kset->empty() ? NULL : kset.get(), _1, _2, _3);
           }
           bool global_frame = !robot_state::Transforms::sameFrame(link_name, req.header.frame_id);
-          ROS_INFO("Attempting to follow %u waypoints for link '%s' using a step of %lf m and jump threshold %lf (in "
+          const moveit::core::MaxEEFStep max_step{ req.max_step, 0.05 };
+          const moveit::core::JumpThreshold jump_threshold{ req.jump_threshold };
+          ROS_INFO("Attempting to follow %u waypoints for link '%s' using a step of (%lf m, %lf rad) and jump threshold %lf (in "
                    "%s reference frame)",
-                   (unsigned int)waypoints.size(), link_name.c_str(), req.max_step, req.jump_threshold,
+                   (unsigned int)waypoints.size(), link_name.c_str(), max_step.translation, max_step.rotation, jump_threshold.factor,
                    global_frame ? "global" : "link");
           std::vector<robot_state::RobotStatePtr> traj;
           res.fraction =
               start_state.computeCartesianPath(jmg, traj, start_state.getLinkModel(link_name), waypoints, global_frame,
-                                               req.max_step, req.jump_threshold, constraint_fn);
+                                               max_step, jump_threshold, constraint_fn);
           robot_state::robotStateToRobotStateMsg(start_state, res.start_state);
 
           robot_trajectory::RobotTrajectory rt(context_->planning_scene_monitor_->getRobotModel(), req.group_name);
